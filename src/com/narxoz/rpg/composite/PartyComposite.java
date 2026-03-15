@@ -3,6 +3,7 @@ package com.narxoz.rpg.composite;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class PartyComposite implements CombatNode {
     private final String name;
@@ -12,64 +13,53 @@ public class PartyComposite implements CombatNode {
         this.name = name;
     }
 
-    public void add(CombatNode node) {
-        children.add(node);
-    }
-
-    public void remove(CombatNode node) {
-        children.remove(node);
-    }
+    public void add(CombatNode node) { children.add(node); }
+    public void remove(CombatNode node) { children.remove(node); }
 
     @Override
-    public String getName() {
-        return name;
-    }
+    public String getName() { return name; }
 
     @Override
     public int getHealth() {
-        // TODO: Composite aggregation
-        // Return total health of all children (and nested children).
-        return 0;
+        return children.stream().mapToInt(CombatNode::getHealth).sum();
     }
 
     @Override
     public int getAttackPower() {
-        // TODO: Composite aggregation
-        // Return total attack of alive children only.
-        return 0;
+        return children.stream()
+                .filter(CombatNode::isAlive)
+                .mapToInt(CombatNode::getAttackPower)
+                .sum();
     }
 
     @Override
     public void takeDamage(int amount) {
-        // TODO: Composite distribution
-        // Distribute incoming damage across alive children.
-        // Suggested baseline:
-        // 1) Collect alive children
-        // 2) Split amount evenly (or using your own documented rule)
-        // 3) Apply damage to each child
+        List<CombatNode> alive = getAliveChildren();
+        if (alive.isEmpty()) return;
+
+        int damagePerUnit = amount / alive.size();
+        for (CombatNode child : alive) {
+            child.takeDamage(damagePerUnit);
+        }
     }
 
     @Override
     public boolean isAlive() {
-        // TODO: Composite liveness
-        // Return true when at least one child is alive.
-        return false;
+        return children.stream().anyMatch(CombatNode::isAlive);
     }
 
     @Override
-    public List<CombatNode> getChildren() {
-        return Collections.unmodifiableList(children);
-    }
+    public List<CombatNode> getChildren() { return Collections.unmodifiableList(children); }
 
     @Override
     public void printTree(String indent) {
-        // TODO: Tree visualization
-        // Print this node and recurse into children with increased indent.
-        System.out.println(indent + "+ " + name + " [TODO: compute HP/ATK]");
+        System.out.println(indent + "+ Группа: " + name + " (HP: " + getHealth() + ")");
+        for (CombatNode child : children) {
+            child.printTree(indent + "  ");
+        }
     }
 
     private List<CombatNode> getAliveChildren() {
-        // TODO: helper for takeDamage()
-        return new ArrayList<>();
+        return children.stream().filter(CombatNode::isAlive).collect(Collectors.toList());
     }
 }
